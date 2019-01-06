@@ -1,0 +1,41 @@
+{
+    "train_data_list": [
+        "../../dataset/train.chunk.01",
+        "../../dataset/train.chunk.02",
+        "../../dataset/train.chunk.03",
+        "../../dataset/train.chunk.04",
+        "../../dataset/train.chunk.05",
+        "../../dataset/train.chunk.06",
+        "../../dataset/train.chunk.07",
+        "../../dataset/train.chunk.08",
+        "../../dataset/train.chunk.09"
+    ],
+    "dev_data_list": [
+        "../../dataset/dev.chunk.01"
+    ],
+    "test_data_list": [
+        "../../dataset/test.chunk.01",
+        "../../dataset/test.chunk.02"
+    ],
+    "train_db_path": "data/train.pt",
+    "dev_db_path": "data/dev.pt",
+    "test_db_path": "data/test.pt",
+    "spm_model_path": "data/vocab/spm.model",
+    "title_path": "data/vocab/train_title.txt",
+    "x_vocab_path": "data/vocab/wp_vocab.txt",
+    "y_vocab_path": "data/vocab/y_vocab.txt",
+    "max_word_len": 30,
+    "max_wp_len": 20,
+    "chunk_size": 40000,
+    "db_chunk_size": 100000,
+    "num_workers": 4,
+    "num_epochs":24,
+    "batch_size": 1024,
+    "emb_size": 200,
+    "lr": 1e-3,
+    "img_size": 2048,
+    "dropout": 0.3
+    
+    
+    
+}
