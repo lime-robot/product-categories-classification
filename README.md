@@ -1,45 +1,72 @@
 # 상품 카테고리 분류기
 
-이 문서는 1월 14일 이전까지 계속 수정 될 것입니다.
-카카오 아레나에 참여한 라임로봇 닉네임의 소스코드입니다. 
 본 분류기는 상품의 타이틀(product)과 이미지 특징(img_feat)만 입력으로 활용하여 대/중/소/상세 카테고리를 예측합니다. 
 
 
-## 의존성
-모든 의존 패키지는 아래의 명령어로 설치할 수 있습니다.
+
+## Requirements
+Ubuntu 16.04, Python 3.6, pytorch 1.0에서 실행을 확인하였습니다.
+
+필요한 패키지는 아래의 명령어로 설치할 수 있습니다.
 ```bash
 pip install -r requirements.txt
 ```
-참고로 pytorch 1.0 버전에서만 동작을 확인하였습니다. 즉, 이 외의 버전에선 동작을 보장할 수 없습니다.
 
 
-## 실행 방법
 
-### 단계 1: 데이터 다운로드
-카카오 아레나 - 쇼핑몰 상품 카테고리 분류 대회의 데이터를 다운로드 받습니다.
-소스코드 디렉터리(product-categories-classification)의 상위 디렉터리에 dataset으로 저장합니다.
+## Getting Started
 
-### 단계 2: 데이터 준비 및 보카 생성
-모델의 학습 위해서, 다운로드 받은 dataset으로부터  `train.db` 파일을 생성합니다.
-또한 word의 인코딩을 위한 vocabulary 생성합니다. (동시에 word 분절을 위한 spm.model도 생성됩니다.)
+### Step 1: 데이터 다운로드
+작업 디렉터리(예시:`kakao_arena/`) 하위 디렉터리에 `dataset/` 디렉터리를 생성하고, 카카오 아레나 - 쇼핑몰 상품 카테고리 분류 대회의 데이터를 [다운로드](https://arena.kakao.com/c/1/data) 받습니다.
 
-추가로 제출을 위한 `dev.db`, `test.db` 파일도 생성합니다.
+본 소스코드(product-categories-classification)도 작업 디렉터리 하위에 위치시킵니다.
 
-#### 1. `train.db`, `dev.db`, `test.db` 생성하기
+```
+kakao_arena
+├── dataset/
+│   ├── train.chunk.01
+│   ├── train.chunk.02
+│   ├── train.chunk.03
+│   ├── ...
+│   └── test.chunk.01
+└── product-categories-classification/
+    ├── utils/
+    ├── doc/
+    ├── train.py
+    ├── ...
+    └── inference.py
+```
+
+### Step 2: 데이터 준비 및 보카 생성
+다운로드 받은 dataset으로부터 학습을 위해 필요한 파일을 생성해 냅니다.
+
+
+#### 1. `train.h5`, `dev.h5`, `test.h5` 생성하기
 ```bash
 python preprocess.py make_db train
 python preprocess.py make_db dev
 python preprocess.py make_db test
 ```
-data/ 폴더내에 `train.db`가 생성됩니다.  동시에 data/img/train 폴더가 생성되며, 이 폴더 내에 [PID].pt가 개별로 저장됩니다. 예를들면 `data/img/train/H2829766805.pt` 파일이 생성됩니다. 이렇게 따로 저장하는 이유는 학습 시 빠르게 불러오기 위해서입니다. 
+
+아래 처럼 `data/` 디렉터리 내에 3개의 파일이 생성되어 위치하게 됩니다.
+```
+product-categories-classification/
+├── data/
+    ├── train.h5
+    ├── dev.h5
+    └── test.h5
+```
 
 #### 2. Vocabulary 생성하기
 ```bash
 python preprocess.py build_vocab train
 ```
-나중에 더 자세히 언급하도록 수정하겠지만 중간에 생성되는 파일 `data/vocab/train_title.txt`은 spm.model 파일을 생성한 후에는 더 이상 필요없습니다. spm.model의 크기는 매우 작습니다.
 
-### 단계 3: 학습하기
+`data/vocab` 디렉터리 내에 word를 index로 치환하기 위해 참조할 vocabulary 파일을 생성해 냅니다. 
+
+그리고 unknown word 문제를 완화시키기 위해서 [bpe](https://github.com/rsennrich/subword-nmt) 방법을 적용할텐데, 이 때 필요한 모델  `data/vocab/spm.model`을 생성합니다. 이 모델을 생성하기 위한 중간파일 `data/vocab/train_title.txt`는 `spm.model` 파일을 생성한 후에는 더 이상 사용되지 않습니다.
+
+### Step 3: 학습하기
 ```bash
 python train.py -j 12 -b 2048 --hidden_size 700 --prefix h700_d0.3_ 
 ```
@@ -50,7 +77,7 @@ python train.py -j 12 -b 2048 --hidden_size 700 --prefix h700_d0.3_
 python utils/remove_opt_params.py --model ../output/best_h700_d0.3_it2vec.pth.tar
 ```
 
-### 단계 4: 추론하기
+### Step 4: 추론하기
 여러 모델들을 앙상블하여 추론하였습니다. 현재 6개의 앙상블로 모델이 구성되어 있습니다.
 싱글 모델용 추론 파일 추가 예정
 ```bash
