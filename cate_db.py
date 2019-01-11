@@ -1,18 +1,14 @@
-import os
 import re
-import copy
-import random
 import torch
-from torch.utils import data
-from collections import Counter
+from torch.utils.data import Dataset
 import sentencepiece as spm
 import h5py
-from misc import get_logger, Option
+from misc import Option
 opt = Option('./config.json')
 
 re_sc = re.compile('[\!@#$%\^&\*\(\)\-\=\[\]\{\}\.,/\?~\+\'"|_:;><`┃]')
 
-class CateDB(data.Dataset):
+class CateDB(Dataset):
     def __init__(self, db_path, x_vocab_path, y_vocab_path, spm_model_path,
                  max_word_len, max_wp_len, div):
         self.max_word_len = max_word_len
@@ -65,7 +61,6 @@ class CateDB(data.Dataset):
             idx = self.mapper[idx]
         
         with h5py.File(self.db_path, 'r') as h:
-            #pid = h['pid'][idx]
             title = h['title'][idx]
             cate = h['cate'][idx]
             img_feat = h['img_feat'][idx]
@@ -81,15 +76,4 @@ class CateDB(data.Dataset):
         if self.mapper is not None:
             return len(self.mapper)
         return len(self.pids)
-
-if __name__ == '__main__':
-    
-    dev_db = CateDB('data/dev.h5', opt.x_vocab_path, opt.y_vocab_path,
-                      opt.spm_model_path, opt.max_word_len, opt.max_wp_len,
-                      'train')
-    for row in dev_db:
-        a = 0
-    pass
-
-
 

@@ -3,12 +3,8 @@ import os
 import shutil
 import time
 import math
-import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-import torch.distributed as dist
 import torch.optim
-import torch.utils.data.distributed
+from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
 import random
@@ -17,7 +13,7 @@ import h5py
 
 from cate_db import CateDB
 from model import ImgText2Vec
-from misc import get_logger, Option
+from misc import Option
 opt = Option('./config.json')
 
 
@@ -96,11 +92,11 @@ def main():
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
 
-    train_loader = torch.utils.data.DataLoader(
+    train_loader = DataLoader(
         train_db, batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True)
 
-    val_loader = torch.utils.data.DataLoader(
+    val_loader = DataLoader(
         valid_db, batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
 

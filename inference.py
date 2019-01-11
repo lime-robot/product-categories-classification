@@ -2,24 +2,17 @@ import argparse
 import os
 import shutil
 import time
-import math
- 
+import math 
 import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-import torch.distributed as dist
-import torch.optim
-import torch.utils.data.distributed
-import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
 import torch.nn.functional as F
-
 import glob
 import random 
 import numpy as np
  
 from cate_db import CateDB
 from model import ImgText2Vec
-from misc import get_logger, Option
+from misc import Option
 opt = Option('./config.json')
  
  
@@ -36,8 +29,6 @@ parser.add_argument('--model_dir', default='', type=str, metavar='PATH', require
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--emb_size', type=int, default=200,
                         help='Size of hidden states')
-parser.add_argument('--prefix', type=str, default='',
-                        help='model prefix')
 parser.add_argument('--div', type=str, default='dev',
                         help='div')
 
@@ -101,7 +92,7 @@ def main():
          
     models = load_model(args.model_dir, db=db)
      
-    loader = torch.utils.data.DataLoader(
+    loader = DataLoader(
         db, batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
     
