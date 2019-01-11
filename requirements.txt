@@ -5,3 +5,4 @@ torch
 numpy
 six
 mmh3
+sentencepiece

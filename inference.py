@@ -2,23 +2,17 @@ import argparse
 import os
 import shutil
 import time
-import math
- 
+import math 
 import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-import torch.distributed as dist
-import torch.optim
-import torch.utils.data.distributed
-import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
 import torch.nn.functional as F
-
+import glob
 import random 
 import numpy as np
  
 from cate_db import CateDB
 from model import ImgText2Vec
-from misc import get_logger, Option
+from misc import Option
 opt = Option('./config.json')
  
  
@@ -31,37 +25,36 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('--print-freq', '-p', default=50, type=int,
                     metavar='N', help='print frequency (default: 10)')
-parser.add_argument('--resume', default='', type=str, metavar='PATH', required=True,
+parser.add_argument('--model_dir', default='', type=str, metavar='PATH', required=True,
                     help='path to latest checkpoint (default: none)')
-parser.add_argument('--prefix', type=str, default='',
-                        help='model prefix')
+parser.add_argument('--emb_size', type=int, default=200,
+                        help='Size of hidden states')
 parser.add_argument('--div', type=str, default='dev',
                         help='div')
 
 
-def load_model(model_filename, hidden_size_list, db):
-    models = []
+def load_model(model_dir, db):    
+    model_path_list = glob.glob(os.path.join(model_dir, 'best*.tar'))
     
-    for hidden_size in hidden_size_list: 
+    
+    models = []    
+    for model_path in model_path_list:
+        hidden_size = [int(w[1:]) for w in model_path.split('_') if w[0]=='h'][0]
         it2vec_model = ImgText2Vec(len(db.i2wp), len(db.cate2i), 
-                                  emb_size=opt.emb_size, img_size=opt.img_size, 
+                                  emb_size=args.emb_size, img_size=opt.img_size, 
                                   hidden_size=hidden_size, 
                                   max_wp_len=db.max_wp_len)    
         it2vec_model.cuda()
         
-        resume_filename = model_filename.replace('1000', str(hidden_size))
-        # optionally resume from a checkpoint
-       
-        if os.path.isfile(resume_filename):
-            print("=> loading checkpoint '{}'".format(resume_filename))
-            checkpoint = torch.load(resume_filename)
-            #epoch = checkpoint['epoch']                        
+        if os.path.isfile(model_path):
+            print("=> loading checkpoint '{}'".format(model_path))
+            checkpoint = torch.load(model_path)
             best_acc = checkpoint['best_acc']
             it2vec_model.load_state_dict(checkpoint['state_dict'])
             print("=> loaded checkpoint '{}' (epoch {}, best_acc {})"
-                .format(resume_filename, checkpoint['epoch'], best_acc))
+                .format(model_path, checkpoint['epoch'], best_acc))
         else:
-            print("=> no checkpoint found at '{}'".format(resume_filename))
+            print("=> no checkpoint found at '{}'".format(model_path))
             exit(-1)
         models.append(it2vec_model)
        
@@ -92,15 +85,14 @@ def main():
     else:
         print(f'{args.div} is not a supported div name.')
         return
-    dataset = torch.load(db_path)
     
-    db = CateDB(dataset, opt.x_vocab_path, opt.y_vocab_path, 
+    db = CateDB(db_path, opt.x_vocab_path, opt.y_vocab_path, 
                       opt.spm_model_path, opt.max_word_len, opt.max_wp_len,
                       div)
          
-    models = load_model(args.resume, hidden_size_list=[700, 800, 900, 1000, 1100, 1200], db=db)
+    models = load_model(args.model_dir, db=db)
      
-    loader = torch.utils.data.DataLoader(
+    loader = DataLoader(
         db, batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
     
@@ -118,15 +110,11 @@ def validate(val_loader, models):
     
     bm_cates, s_cates, d_cates = get_cates(val_loader.dataset)
     pred_bs, pred_ms, pred_ss, pred_ds = [], [], [], []
-    idxs = [] # indices
-    for i, (idx, x_text, x_img, b, m, s, d) in enumerate(val_loader):
-        # measure data loading time
-         
+    idxs = []
+    for i, (idx, x_text, x_img, b, m, s, d) in enumerate(val_loader): 
         x_text, x_img, b, m, s, d = (x_text[0].cuda(), x_text[1].cuda()), x_img.cuda(), \
                                     b.cuda(), m.cuda(), s.cuda(), d.cuda()
-        batch_size = b.size(0)
-         
-        # compute output        
+        
         pred_b_avg, pred_m_avg, pred_s_avg, pred_d_avg = 0.0, 0.0, 0.0, 0.0
         for model in models:
             pred_b, pred_m, pred_s, pred_d = model(x_text, x_img)    
@@ -168,12 +156,12 @@ def validate(val_loader, models):
     pred_ds = torch.cat(pred_ds)
     idxs = torch.cat(idxs)
     
-    dataset = val_loader.dataset.dataset
+    pids = val_loader.dataset.pids
     
     print('writing result tsv...')
     with open(f'{args.div}.tsv', 'w') as f_tsv:
         for idx, b, m, s, d in zip(idxs, pred_bs, pred_ms, pred_ss, pred_ds):            
-            f_tsv.write(f'{dataset[idx][0]}\t{b}\t{m}\t{s}\t{d}\n')
+            f_tsv.write(f'{pids[idx]}\t{b}\t{m}\t{s}\t{d}\n')
     
 
 def get_cates(val_db):

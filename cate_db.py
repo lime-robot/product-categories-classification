@@ -1,28 +1,26 @@
-import os
 import re
-import copy
-import random
 import torch
-from torch.utils import data
-from collections import Counter
+from torch.utils.data import Dataset
 import sentencepiece as spm
-
-from six.moves import cPickle
 import h5py
-from misc import get_logger, Option
+from misc import Option
 opt = Option('./config.json')
 
 re_sc = re.compile('[\!@#$%\^&\*\(\)\-\=\[\]\{\}\.,/\?~\+\'"|_:;><`┃]')
 
-class CateDB(data.Dataset):
-    def __init__(self, dataset, x_vocab_path, y_vocab_path, spm_model_path,
+class CateDB(Dataset):
+    def __init__(self, db_path, x_vocab_path, y_vocab_path, spm_model_path,
                  max_word_len, max_wp_len, div):
         self.max_word_len = max_word_len
         self.max_wp_len = max_wp_len
-        self.div = div
-        if isinstance(dataset, str):            
-            dataset = torch.load(dataset)
-        self.dataset = dataset    
+        self.div = div        
+        if isinstance(db_path, list):
+            self.db_path, self.mapper = db_path
+        else:
+            self.mapper = None
+            self.db_path = db_path
+        with h5py.File(self.db_path, 'r') as h:
+            self.pids = h['pid'][:]
         self.sp = spm.SentencePieceProcessor()
         self.sp.Load(spm_model_path)
         self.i2wp = [line.split('\t')[0] for line in open(x_vocab_path)]
@@ -51,25 +49,31 @@ class CateDB(data.Dataset):
         
         return text_x_idx, text_x_len
     
-    def get_x_img(self, pid):
-        img_path = f'data/img/{self.div}/{pid}.pt'
-        x_img = torch.load(img_path)
+    def get_x_img(self, img_feat):
+        x_img = torch.FloatTensor(img_feat)
         return x_img
     
     def __getitem__(self, idx):
         if idx >= len(self):
             raise StopIteration
         
-        pid, title, cate = self.dataset[idx]
+        if self.mapper is not None:
+            idx = self.mapper[idx]
         
-        #y = self.get_y(cate)
-        cate = [int(c)-1 for c in cate.split('>')]
-        b, m, s, d = cate 
-        x_text = self.get_x_text(title)
-        x_img = self.get_x_img(pid)
+        with h5py.File(self.db_path, 'r') as h:
+            title = h['title'][idx]
+            cate = h['cate'][idx]
+            img_feat = h['img_feat'][idx]
+        
+            cate = [int(c)-1 for c in cate.split('>')]
+            b, m, s, d = cate 
+            x_text = self.get_x_text(title)
+            x_img = self.get_x_img(img_feat)
          
         return idx, x_text, x_img, b, m, s, d
     
     def __len__(self):
-        return len(self.dataset)
+        if self.mapper is not None:
+            return len(self.mapper)
+        return len(self.pids)
 
