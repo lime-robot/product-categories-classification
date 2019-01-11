@@ -40,6 +40,8 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--prefix', type=str, default='',
                     help='model prefix')
+parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
+                    metavar='LR', help='initial learning rate')
 
 
 def main():
@@ -78,7 +80,7 @@ def main():
     it2vec_model.cuda()
     print(it2vec_model)
 
-    optimizer = torch.optim.Adam(it2vec_model.parameters(), opt.lr)
+    optimizer = torch.optim.Adam(it2vec_model.parameters(), args.lr)
 
     # optionally resume from a checkpoint
     if args.resume:
@@ -407,7 +409,7 @@ def timeSince(since, percent):
  
 def adjust_learning_rate(optimizer, epoch):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = opt.lr * (0.1 ** (epoch // 10))
+    lr = args.lr * (0.1 ** (epoch // 10))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
  
