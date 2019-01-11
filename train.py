@@ -9,11 +9,11 @@ import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.optim
 import torch.utils.data.distributed
-import torchvision.transforms as transforms
 import torch.nn.functional as F
 
 import random
 import numpy as np
+import h5py
 
 from cate_db import CateDB
 from model import ImgText2Vec
@@ -32,6 +32,10 @@ parser.add_argument('--print-freq', '-p', default=50, type=int,
                     metavar='N', help='print frequency (default: 10)')
 parser.add_argument('--hidden_size', type=int, default=700,
                         help='Size of hidden states')
+parser.add_argument('--emb_size', type=int, default=200,
+                        help='Size of hidden states')
+parser.add_argument('--dropout', type=float, default=0.3,
+                    help='Dropout probability')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('--prefix', type=str, default='',
@@ -46,27 +50,31 @@ def main():
     np.random.seed(777)
     torch.manual_seed(777)
 
-    print('loading db ...')
-    dataset = torch.load(opt.train_db_path)
-    print('shuffling db ...')
-    random.shuffle(dataset)
+    print('preparing dataset ...')    
+    with h5py.File(opt.train_db_path, 'r') as h:
+        db_size = len(h['pid'])
+        total_mapper = list(range(db_size))
+    random.shuffle(total_mapper)
+    
+    valid_size = opt.valid_size    
+    train_mapper = total_mapper[:-valid_size]
+    valid_mapper = total_mapper[-valid_size:]
+    print(f'train_set size:{len(train_mapper)}')
+    print(f'valid_set size:{len(valid_mapper)}')
+    
 
-    valid_size = 10000
-    train_set = dataset[:-valid_size]
-    valid_set = dataset[-valid_size:]
-
-    train_db = CateDB(train_set, opt.x_vocab_path, opt.y_vocab_path,
+    train_db = CateDB([opt.train_db_path, train_mapper], opt.x_vocab_path, opt.y_vocab_path,
                       opt.spm_model_path, opt.max_word_len, opt.max_wp_len,
                       'train')
-    valid_db = CateDB(valid_set, opt.x_vocab_path, opt.y_vocab_path,
+    valid_db = CateDB([opt.train_db_path, valid_mapper], opt.x_vocab_path, opt.y_vocab_path,
                       opt.spm_model_path, opt.max_word_len, opt.max_wp_len,
                       'train')
 
     it2vec_model = ImgText2Vec(len(train_db.i2wp), len(train_db.cate2i),
-                               emb_size=opt.emb_size, img_size=opt.img_size,
+                               emb_size=args.emb_size, img_size=opt.img_size,
                                hidden_size=args.hidden_size,
                                max_wp_len=train_db.max_wp_len,
-                               dropout=opt.dropout)
+                               dropout=args.dropout)
     it2vec_model.cuda()
     print(it2vec_model)
 
@@ -118,7 +126,7 @@ def main():
             'best_acc': best_acc,
             'optimizer': optimizer.state_dict(),
         }, is_best,
-            filename='output/%sit2vec.pth.%d.tar' % (args.prefix, epoch),
+            filename='output/%sit2vec.pth.tar' % (args.prefix),
             bestfilename='output/best_%sit2vec.pth.tar' % (args.prefix)
         )
 

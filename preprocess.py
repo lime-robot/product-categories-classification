@@ -3,6 +3,7 @@ import re
 import sys
 import traceback
 import six
+from six.moves import cPickle
 from multiprocessing import Pool
 import itertools
 import torch
@@ -13,7 +14,7 @@ import fire
 import cate_db
 import tqdm
 import h5py
-import json
+import numpy as np
 from misc import get_logger, Option
 opt = Option('./config.json')
 
@@ -65,7 +66,7 @@ class Reader(object):
                 continue
             if self.end_offset and self.end_offset < offset:
                 break
-            #for i in range(sz):
+            
             if self.progress:
                 iteration = tqdm.tqdm(range(sz), mininterval=1)
             else:
@@ -112,12 +113,9 @@ def build_x_vocab(txt_path, spm_model, x_vocab_path):
      
     max_wps_len = 0
     max_words_len = 0
-    #for i, line in enumerate(title_lines):
     for line in tqdm.tqdm(title_lines, mininterval=1):
         line = line.strip()
         words = line.split()
-        #if max_words_len < len(words):
-        #    print(max_words_len, len(words), words)
         max_words_len = max(max_words_len, len(words))         
          
         wps = []
@@ -152,21 +150,21 @@ def preprocessing_func(data):
     try:
         data_path_list, div, begin_offset, end_offset = data
         
-        pregress = True if begin_offset == 0 else False
-        reader = Reader(data_path_list, div, begin_offset, end_offset, pregress)
-        ret = []
+        progress = True if begin_offset % (opt.chunk_size*opt.num_workers) == 0 else False
+        reader = Reader(data_path_list, div, begin_offset, end_offset, progress)
+
+        samples = []
         for i, (pid, title, img_feat, b, m, s, d) in enumerate(reader.generate()):
             pid = pid.decode('utf-8')
             title = title.decode('utf-8')
-            img_path = f'data/img/{div}/{pid}.pt'
-            img_feat = torch.FloatTensor(img_feat)
-            torch.save(img_feat, img_path)
-            ret.append((pid, title, f'{b}>{m}>{s}>{d}'))
-             
-            #ret.append((pid, title, b, m, s, d))
+            img_feat = np.copy(img_feat)
+            samples.append((pid, title, img_feat, f'{b}>{m}>{s}>{d}'))
     except Exception:
         raise Exception("".join(traceback.format_exception(*sys.exc_info())))
-    return ret
+    end_offset = min(end_offset, begin_offset+len(samples))
+    tmp_path = f'tmp/{begin_offset}_{end_offset}'
+    open(tmp_path, 'wb').write(cPickle.dumps(samples, 2))
+    return [begin_offset, end_offset]
     
 def make_db(data_name):
     if data_name == 'train':
@@ -187,26 +185,44 @@ def make_db(data_name):
     print('split data into %d chunks' % (num_chunks))
     pool = Pool(opt.num_workers)
     
-    print('getting ... ')
-    os.makedirs(f'data/img/{div}', exist_ok=True)
+    sz = chunk_offsets[-1][1]
+    os.makedirs('data', exist_ok=True)
+    data_h = h5py.File(f'data/{data_name}.h5', 'w')
+    data_h.create_dataset('pid', (sz, ), dtype=h5py.special_dtype(vlen=str))
+    data_h.create_dataset('title', (sz, ), dtype=h5py.special_dtype(vlen=str))
+    data_h.create_dataset('cate', (sz, ), dtype=h5py.special_dtype(vlen=str))
+    data_h.create_dataset('img_feat', (sz, 2048), dtype=np.float32)    
+    
+    print('pre-processing ...')
+    def write_data(rets):
+        print('writing ...')
+        for ret in tqdm.tqdm(rets, mininterval=1):
+            [begin, end] = ret
+            tmp_path = f'tmp/{begin}_{end}'
+            samples = cPickle.loads(open(tmp_path, 'rb').read())
+            for i in range(begin, end):
+                sample_i = i-begin
+                data_h['pid'][i] = samples[sample_i][0]
+                data_h['title'][i] = samples[sample_i][1]
+                data_h['img_feat'][i] = samples[sample_i][2]
+                data_h['cate'][i] = samples[sample_i][3]
+    
     try:
-        rets = pool.map_async(preprocessing_func, [(
+        os.makedirs('tmp', exist_ok=True)
+        pool.map_async(preprocessing_func, [(
                                         data_path_list,
-                                        div,
+                                        div,                                             
                                         begin,
                                         end)
-                                       for begin, end in chunk_offsets]).get(9999999)
+                                       for begin, end in chunk_offsets], callback=write_data).get(9999999)
         pool.close()
         pool.join()
-        print('getting ... done')
-        rets = list(itertools.chain(*rets))
-        os.makedirs('data', exist_ok=True)
-        torch.save(rets, f'data/{data_name}.pt')
             
     except KeyboardInterrupt:
         pool.terminate()
         pool.join()
         raise
+    data_h.close()
 
 def build_y_vocab(cates, y_vocab_path):
     y_vocab = Counter(cates).most_common()
@@ -218,13 +234,15 @@ def build_vocab(data_name):
         return
         
     print('loading db ...')
-    db = torch.load(f'data/{data_name}.pt')
+    h = h5py.File(f'data/{data_name}.h5')
     
     # write titles
-    pids, titles, cates = zip(*db)
+    #pids = h['pid'][:]
+    titles = h['title'][:]
+    cates = h['cate'][:]
     
     # pre-process titles    
-    print('pre-procssing ...')    
+    print('pre-procssing titles ...')    
     titles = [' '.join(cate_db.re_sc.sub(' ', title).strip().split()) for title in tqdm.tqdm(titles, mininterval=1)]
     print('writing preprocessed titles ...')    
     write_titles(titles, opt.title_path)
