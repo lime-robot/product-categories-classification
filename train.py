@@ -33,7 +33,7 @@ parser.add_argument('--print-freq', '-p', default=50, type=int,
 parser.add_argument('--hidden_size', type=int, default=700,
                         help='Size of hidden states')
 parser.add_argument('--emb_size', type=int, default=200,
-                        help='Size of hidden states')
+                        help='Text embedding size')
 parser.add_argument('--dropout', type=float, default=0.3,
                     help='Dropout probability')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
