@@ -1,5 +1,7 @@
 # 상품 카테고리 분류기
 
+쇼핑몰 상품 카테고리 분류 대회에서 참여해 1등의 성적(잠정적)을 거둔 라임로봇팀의 오픈 소스코드입니다.
+
 본 분류기는 상품의 타이틀(product)과 이미지 특징(img_feat)을 입력으로 활용하여 대/중/소/상세 카테고리를 예측합니다. 
 모델의 구조는 심플하지만 우수한 카테고리 분류 정확도를 가집니다.
 
@@ -8,6 +10,7 @@
 
 ## Requirements
 Ubuntu 16.04, Python 3.6, pytorch 1.0에서 실행을 확인하였습니다.
+최소 CPU 코어 6개 / 메모리 32G / GTX1080 8GB / 저장공간 450GB의 장비가 필요합니다.
 
 필요한 패키지는 아래의 명령어로 설치할 수 있습니다.
 ```bash
@@ -74,7 +77,7 @@ python preprocess.py build_vocab train
 ```bash
 python train.py -j 12 -b 2048 --hidden_size 700 --prefix h700_d0.3_ 
 ```
-+ `-j`: dataloader에서 사용할 woker의 개수를 지정합니다.
++ `-j`: dataloader에서 사용할 worker의 개수를 지정합니다.
 + `-b`: batch size를 지정합니다.
 + `--emb_size` : Text embedding 크기를 지정합니다. 디폴트는 200입니다.
 + `--hidden_size` : model의 hidden units의 크기를 지정합니다.
@@ -84,7 +87,7 @@ python train.py -j 12 -b 2048 --hidden_size 700 --prefix h700_d0.3_
 
 이 외에 옵션은 `config.json` 파일에서 확인하시기 바랍니다.
 
-참고로 CPU 코어 6개 / 메모리 32G / GTX1080 8GB에서 학습이 가능합니다. CPU 코어 8개 / 메모리 32G / GPU 메모리가 14G 이상일 경우 아래의 명령어로 학습을 하면 좋습니다. 
+CPU 코어 8개 / 메모리 32G / GPU 메모리가 14G 이상일 경우 아래의 명령어를 사용하면 학습이 더 빨리 종료됩니다. 
 ```bash
 python train.py -j 16 -b 8192 --hidden_size 700 --prefix h700_d0.3_ 
 ```
@@ -101,27 +104,28 @@ python inference.py -j 12 -b 2048 --model_dir output/ --div dev
 ```
 `--model_dir`로 지정된 디렉터리에 있는 `best*.tar` 형식의 모든 model 파일들을 로딩합니다. 로딩된 모든 model들은 앙상블 결합돼 inference에 활용됩니다.
 
-+ `-j` : dataloader에서 사용할 woker의 개수를 지정합니다.
++ `-j` : dataloader에서 사용할 worker의 개수를 지정합니다.
 + `-b` : batch size를 지정합니다.
 + `--model_dir` : model이 저장된 디렉터리를 지정합니다.
 + `--div` : dev 또는 test로 지정할 수 있습니다.
 
 #### pre-trained models
+다른 하이퍼파라미터는 고정하고 hidden_size만 변경하여 학습된 model들입니다.
+
 | 모델 이름 | 파일 크기| Dev score |
 |:---:|:---:|:---:|
-|[best_h700_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/aa1vk61c0pphlj9/best_h700_d0.3_it2vec.pth.tar?dl=0)| 61.85MB | 1.068? |
+|[best_h700_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/aa1vk61c0pphlj9/best_h700_d0.3_it2vec.pth.tar?dl=0)| 61.85MB | 1.069? |
 |[best_h800_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/f76otyd2nfnhlwp/best_h800_d0.3_it2vec.pth.tar?dl=0)| 73.70MB | 1.0707 |
-|[best_h900_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/785ktor5dwzoxjt/best_h900_d0.3_it2vec.pth.tar?dl=0)| 86.73MB | 1.0723 |
-|[best_h1000_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/s5whaim2lo4zljd/best_h1000_d0.3_it2vec.pth.tar?dl=0)| 101.07MB | 1.07? |
+|[best_h900_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/785ktor5dwzoxjt/best_h900_d0.3_it2vec.pth.tar?dl=0)| 86.73MB | 1.0717 |
+|[best_h1000_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/s5whaim2lo4zljd/best_h1000_d0.3_it2vec.pth.tar?dl=0)| 101.07MB | 1.0722 |
 |[best_h1100_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/pdz7r20kjy0syyp/best_h1100_d0.3_it2vec.pth.tar?dl=0)| 116.59MB | 1.07? |
 |[best_h1200_d0.3_it2vec.pth.tar](https://www.dropbox.com/s/eoch17ody1bhod4/best_h1200_d0.3_it2vec.pth.tar?dl=0)| 133.32MB | 1.07? |
 
-아쉽게도 h800, h900을 제외하곤 dev score를 확인하지 못하였습니다.
-
-
+위 model들의 묶음 [output](https://www.dropbox.com/s/pj1x0yhuuqdet4a/output.zip?dl=0)을 다운로드 받을 수 있습니다.
+hidden_size를 늘릴수록 dev score가 증가하는 것을 확인하였으나, 아쉽게도 h800, h900, h1000을 제외하곤 dev score를 확인하지 못하였습니다.
 
 | 앙상블 결합 | 파일 크기 | Dev score | Test score |
-|:---:|:---:|:---:|:---:|
+| :---: | :---: | :---: | :---: |
 |700, 800, 900, 1000 | 323.35MB | 1.082713 | |
 |700, 800, 900, 1000, 1100, 1200 | 573.26MB | 1.084474 | 1.085920 |
 
