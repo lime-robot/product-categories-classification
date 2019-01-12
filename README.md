@@ -10,7 +10,8 @@
 
 ## Requirements
 Ubuntu 16.04, Python 3.6, pytorch 1.0에서 실행을 확인하였습니다.
-최소 CPU 코어 6개 / 메모리 32G / GTX1080 8GB / 저장공간 450GB의 장비가 필요합니다.
+
+CPU 코어 6개 / 메모리 32G / GTX1080 8GB / 저장공간 450GB의 장비가 필요합니다.
 
 필요한 패키지는 아래의 명령어로 설치할 수 있습니다.
 ```bash
@@ -41,7 +42,7 @@ kakao_arena/
 ```
 
 ### Step 2: 데이터 준비 및 Vocabulary 생성
-다운로드 받은 dataset으로부터 학습을 위해 필요한 파일을 생성해 냅니다. 추가로 250GB정도의 저장 공간이 필요합니다.
+다운로드 받은 dataset으로부터 학습을 위해 필요한 파일을 생성해 냅니다. 이번 step에서 250GB정도의 저장 공간이 사용됩니다.
 
 
 #### 1. `train.h5`, `dev.h5`, `test.h5` 생성하기
@@ -110,7 +111,7 @@ python inference.py -j 12 -b 2048 --model_dir output/ --div dev
 + `--div` : dev 또는 test로 지정할 수 있습니다.
 
 #### pre-trained models
-다른 하이퍼파라미터는 고정하고 hidden_size만 변경하여 학습된 model들입니다.
+아래 model들은 다른 하이퍼파라미터는 고정하고 hidden_size만 변경하여 학습된 model들입니다.
 
 | 모델 이름 | 파일 크기| Dev score |
 |:---:|:---:|:---:|
