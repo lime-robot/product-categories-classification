@@ -140,7 +140,7 @@ hidden_size를 늘릴수록 dev score가 증가하는 것을 확인하였으나,
 
 
 ## Features
-+ 상품의 타이틀(product 컬럼)과 이미지 특징(img_feat)만 입력으로 활용
++ 상품의 타이틀(product 컬럼)과 이미지 특징(img_feat 컬럼)만 입력으로 활용
 + Byte Pair Encoding (BPE) 기반의 word 분절 방법 사용
 + sub-words로 분절된 word를 LSTM으로 encoding 
 + class imbalance problem을 완화하기 위해 대/중/소/상세에 개별 classifier 할당
