@@ -2,7 +2,7 @@
 
 쇼핑몰 상품 카테고리 분류 대회에서 참여해 1등의 성적(잠정적)을 거둔 라임로봇팀의 오픈 소스코드입니다.
 
-본 분류기는 상품의 타이틀(product 컬럼)과 이미지 특징(img_feat 컬럼)을 입력으로 활용하여 대/중/소/상세 카테고리를 예측합니다. 
+본 분류기는 상품의 타이틀(product 컬럼)과 이미지 특징(img_feat 컬럼)을 입력으로 활용하여 대/중/소/세 카테고리를 예측합니다. 
 모델 구조의 심플함에 비해 우수한 카테고리 분류 정확도를 가집니다.
 
 <img src="./doc/model.png" width="600">
@@ -70,7 +70,7 @@ python preprocess.py build_vocab train
 
 + `data/vocab/spm.model` : sentencepiece로 생성된 BPE 모델 파일입니다.
     
-    상품의 title은 여러 개의 words로 구성됩니다. word를 index로 치환하는 과정에서 필연적으로 unknown word 문제를 접하게 됩니다([참고자료](http://www.aclweb.org/anthology/P15-1002)). unknown word 문제를 완화하기 위한 방법으로 한 word를 여러 개의 작은 sub-words로 쪼개는 방법이 제안 되었습니다. 최근 널리 사용되는 방법으로 [Byte Pair Encoding (BPE)](https://github.com/rsennrich/subword-nmt)가 있습니다. BPE를 사용하기 쉽도록 한 패키지로 [sentencepiece](https://github.com/google/sentencepiece)(일종의 토크나이저)가 있습니다. `spm.model`은 sentencepiece로부터 만들어진 모델 파입니다.
+    상품의 title은 여러 개의 words로 구성됩니다. word를 index로 치환하는 과정에서 필연적으로 unknown word 문제를 접하게 됩니다. unknown word 문제를 완화하기 위한 방법으로 한 word를 여러 개의 작은 sub-words로 쪼개는 방법이 제안 되었습니다. 최근 널리 사용되는 방법으로 [Byte Pair Encoding (BPE)](https://github.com/rsennrich/subword-nmt)가 있습니다. BPE를 사용하기 쉽도록 한 패키지로 [sentencepiece](https://github.com/google/sentencepiece)(일종의 토크나이저)가 있습니다. `spm.model`은 sentencepiece로부터 만들어진 모델 파입니다.
         
 + `data/vocab/wp_vocab.txt` : word를 여러 개의 sub-words로 쪼갠 다음 sub-word를 index로 치환하기 위해 필요한 사전파일입니다.
 + `data/vocab/y_vocab.txt` : 대>중>소>상세를 index로 치환하기 위해 필요한 사전파일입니다.
@@ -143,5 +143,5 @@ hidden_size를 늘릴수록 dev score가 증가하는 것을 확인하였으나,
 + 상품의 타이틀(product 컬럼)과 이미지 특징(img_feat 컬럼)만 입력으로 활용
 + Byte Pair Encoding (BPE) 기반의 word 분절 방법 사용
 + sub-words로 분절된 word를 LSTM으로 encoding 
-+ class imbalance problem을 완화하기 위해 대/중/소/상세에 개별 classifier 할당
-+ 클래스 예측 정교화 - 4개 classifier의 예측된 distributions에서 가장 높은 확률값을 가지는 대/중/소/상세 조합을 탐색
++ class imbalance problem을 완화하기 위해 대/중/소/세에 개별 classifier 할당
++ 클래스 예측 정교화 - 4개 classifier의 예측된 distributions에서 가장 높은 확률값을 가지는 대/중/소/세 조합을 탐색
