@@ -135,8 +135,37 @@ hidden_size를 늘릴수록 dev score가 증가하는 것을 확인하였으나,
 |700, 800, 900, 1000, 1100, 1200 | 573.26MB | 1.084474 | 1.085920 |
 
 
-#### 결과 재현
-위의 6개 pre-trained 모델을 다운로드하여 `output/` 폴더에 넣어준 후에 위의 명령어를 실행하면 됩니다.
+## Quick reproduce
+### 1) Vocabulary 다운로드
+[vocab 파일을 다운로드](https://www.dropbox.com/s/r0ap1eija4i91hu/vocab.zip?dl=0) 받아서 `data` 위치에서 압축을 해제합니다.
+
+### 2) `dev.h5`, `test.h5` 생성
+```bash
+python preprocess.py make_db dev
+python preprocess.py make_db test
+```
+
+아래처럼 디렉터리와 파일이 구성되면 됩니다.
+```
+product-categories-classification/
+├── output/
+└── data/
+    ├── vocab/
+    │   ├── spm.model
+    │   ├── wp_vocab.txt
+    │   └── y_vocab.txt
+    ├── dev.h5
+    └── test.h5
+```
+
+### 3) pre-trained modes 다운로드
+[6개 모델 묶음](https://www.dropbox.com/s/pj1x0yhuuqdet4a/output.zip?dl=0)을 다운로드하여 `output/` 디렉터리에 압축을 풀어줍니다.
+
+### 4) 결과파일(`dev.tsv`, `test.tsv`) 생성
+```bash
+python inference.py -j 12 -b 2048 --model_dir output/ --div dev
+python inference.py -j 12 -b 2048 --model_dir output/ --div test
+```
 
 
 ## Features
