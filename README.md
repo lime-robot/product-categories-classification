@@ -135,9 +135,9 @@ hidden_size를 늘릴수록 dev score가 증가하는 것을 확인하였으나,
 |700, 800, 900, 1000, 1100, 1200 | 573.26MB | 1.084474 | 1.085920 |
 
 
-## Quick reproduce
+## Quick Reproduce
 ### 1) Vocabulary 다운로드
-[vocab 파일을 다운로드](https://www.dropbox.com/s/r0ap1eija4i91hu/vocab.zip?dl=0) 받아서 `data` 위치에서 압축을 해제합니다.
+[vocab 파일을 다운로드](https://www.dropbox.com/s/r0ap1eija4i91hu/vocab.zip?dl=0) 받아 `data/` 디렉터리에서 압축을 해제합니다.
 
 ### 2) `dev.h5`, `test.h5` 생성
 ```bash
@@ -145,7 +145,8 @@ python preprocess.py make_db dev
 python preprocess.py make_db test
 ```
 
-아래처럼 디렉터리와 파일이 구성되면 됩니다.
+
+위 두 단계 수행 후 아래처럼 디렉터리와 파일이 구성되면 됩니다.
 ```
 product-categories-classification/
 ├── output/
