@@ -137,7 +137,7 @@ hidden_size를 늘릴수록 dev score가 증가하는 것을 확인하였으나,
 
 ## Quick Reproduce
 ### 1) Vocabulary 다운로드
-[vocab 파일을 다운로드](https://www.dropbox.com/s/r0ap1eija4i91hu/vocab.zip?dl=0) 받아 `data/` 디렉터리에서 압축을 해제합니다.
+[vocab.zip 파일](https://www.dropbox.com/s/r0ap1eija4i91hu/vocab.zip?dl=0)을 다운로드 받아 `data/` 디렉터리에서 압축을 해제합니다.
 
 ### 2) `dev.h5`, `test.h5` 생성
 ```bash
