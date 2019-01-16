@@ -31,7 +31,7 @@ parser.add_argument('--div', type=str, default='dev',
                     help='div')
 
 
-def load_model(model_dir, db):
+def load_models(model_dir, db):
     model_path_list = glob.glob(os.path.join(model_dir, 'best*.tar'))
 
     models = []
@@ -88,7 +88,7 @@ def main():
                 opt.spm_model_path, opt.max_word_len, opt.max_wp_len,
                 div)
 
-    models = load_model(args.model_dir, db=db)
+    models = load_models(args.model_dir, db=db)
 
     loader = DataLoader(
         db, batch_size=args.batch_size, shuffle=False,
@@ -156,7 +156,7 @@ def validate(val_loader, models):
 
     pids = val_loader.dataset.pids
 
-    print('writing result tsv...')
+    print('writing results in TSV file...')
     with open(f'{args.div}.tsv', 'w') as f_tsv:
         for idx, b, m, s, d in zip(idxs, pred_bs, pred_ms, pred_ss, pred_ds):
             f_tsv.write(f'{pids[idx]}\t{b}\t{m}\t{s}\t{d}\n')
