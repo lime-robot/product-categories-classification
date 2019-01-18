@@ -188,7 +188,24 @@ def make_db(data_name):
     chunk_offsets = split_data(data_path_list, div, chunk_size)
     num_chunks = len(chunk_offsets)
     print('split data into %d chunks' % (num_chunks))
+
+    print('generating ...')
     pool = Pool(opt.num_workers)
+    try:
+        os.makedirs('tmp', exist_ok=True)
+        pool.map_async(preprocessing_func,
+                       [(
+                           data_path_list,
+                           div,
+                           begin,
+                           end
+                        ) for begin, end in chunk_offsets]).get(9999999)
+        pool.close()
+        pool.join()
+    except KeyboardInterrupt:
+        pool.terminate()
+        pool.join()
+        raise
 
     sz = chunk_offsets[-1][1]
     os.makedirs('data', exist_ok=True)
@@ -198,38 +215,17 @@ def make_db(data_name):
     data_h.create_dataset('cate', (sz, ), dtype=h5py.special_dtype(vlen=str))
     data_h.create_dataset('img_feat', (sz, 2048), dtype=np.float32)
 
-    print('generating ...')
-
-    def write_data(rets):
-        print('writing ...')
-        for ret in tqdm.tqdm(rets, mininterval=1):
-            [begin, end] = ret
-            tmp_path = f'tmp/{begin}_{end}'
-            samples = cPickle.loads(open(tmp_path, 'rb').read())
-            for i in range(begin, end):
-                sample_i = i-begin
-                data_h['pid'][i] = samples[sample_i][0]
-                data_h['title'][i] = samples[sample_i][1]
-                data_h['img_feat'][i] = samples[sample_i][2]
-                data_h['cate'][i] = samples[sample_i][3]
-
-    try:
-        os.makedirs('tmp', exist_ok=True)
-        pool.map_async(preprocessing_func,
-                       [(
-                           data_path_list,
-                           div,
-                           begin,
-                           end
-                        ) for begin, end in chunk_offsets],
-                       callback=write_data).get(9999999)
-        pool.close()
-        pool.join()
-
-    except KeyboardInterrupt:
-        pool.terminate()
-        pool.join()
-        raise
+    print('writing ...')
+    for ret in tqdm.tqdm(chunk_offsets, mininterval=1):
+        [begin, end] = ret
+        tmp_path = f'tmp/{begin}_{end}'
+        samples = cPickle.loads(open(tmp_path, 'rb').read())
+        for i in range(begin, end):
+            sample_i = i-begin
+            data_h['pid'][i] = samples[sample_i][0]
+            data_h['title'][i] = samples[sample_i][1]
+            data_h['img_feat'][i] = samples[sample_i][2]
+            data_h['cate'][i] = samples[sample_i][3]
     data_h.close()
 
 
